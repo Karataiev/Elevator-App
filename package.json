@@ -1,0 +1,20 @@
+{
+  "name": "elevator-app",
+  "version": "1.0.0",
+  "description": "Elevator simulation with PIXI.js and Tween.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "pixi.js": "^7.3.2",
+    "@tweenjs/tween.js": "^23.1.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vite": "^5.0.8",
+    "@types/node": "^20.10.5"
+  }
+}
