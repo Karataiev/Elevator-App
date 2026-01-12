@@ -1,22 +1,26 @@
-import { Application, Text } from 'pixi.js';
+import { Application } from 'pixi.js';
+import { GameView } from './views/GameView';
+import { Building } from './models/Building';
+import { BuildingConfig } from './models/types';
 
-async function initApp() {
-  const app = new Application();
-
-  // @ts-ignore
-  await app.init({
-    width: 2000,
-    height: 1600,
-    backgroundColor: 0xf0f0f0,
+function initApp() {
+  const canvasElement = document.getElementById('canvas') as HTMLCanvasElement;
+  
+  const app = new Application({
+    width: 1200,
+    height: 800,
+    backgroundColor: 0x808080,
     antialias: true,
   });
 
-  const canvasElement = document.getElementById('canvas') as HTMLCanvasElement;
   // @ts-ignore
-  const pixiCanvas = app.canvas as HTMLCanvasElement;
-  
-  pixiCanvas.width = app.screen.width;
-  pixiCanvas.height = app.screen.height;
+  const pixiCanvas = (app.view || app.canvas) as HTMLCanvasElement;
+
+  if (canvasElement && canvasElement.parentNode) {
+    canvasElement.parentNode.replaceChild(pixiCanvas, canvasElement);
+  } else {
+    document.body.appendChild(pixiCanvas);
+  }
   
   const maxWidth = window.innerWidth - 40;
   const maxHeight = window.innerHeight - 100;
@@ -32,33 +36,21 @@ async function initApp() {
   
   pixiCanvas.style.width = `${displayWidth}px`;
   pixiCanvas.style.height = `${displayHeight}px`;
-  
-  if (canvasElement && canvasElement.parentNode) {
-    canvasElement.parentNode.replaceChild(pixiCanvas, canvasElement);
-  } else {
-    document.body.appendChild(pixiCanvas);
-  }
-  
-  console.log('Canvas resolution:', pixiCanvas.width, 'x', pixiCanvas.height);
-  console.log('Canvas display size:', displayWidth, 'x', displayHeight);
 
-  const testText = new Text(
-    'PIXI.js працює!',
-    {
-      fontSize: 32,
-      fill: 0x000000,
-      align: 'center',
-    }
+  const buildingConfig: BuildingConfig = {
+    floors: 7,
+    elevatorCapacity: 4,
+  };
+
+  const building = new Building(buildingConfig);
+
+  const gameView = new GameView(
+    building,
+    app.screen.width,
+    app.screen.height
   );
 
-  testText.anchor.set(0.5);
-  testText.x = app.screen.width / 2;
-  testText.y = app.screen.height / 2;
-
-  app.stage.addChild(testText);
-
-  console.log('PIXI Application ініціалізовано успішно!');
-  console.log('Canvas розмір:', app.screen.width, 'x', app.screen.height);
+  app.stage.addChild(gameView.container);
 }
 
-initApp().catch(console.error);
+initApp();
