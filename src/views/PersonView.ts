@@ -66,9 +66,12 @@ export class PersonView {
 
   public updatePosition(): void {
     const x = this.buildingView.getPeopleX();
-    const y = this.buildingView.getFloorY(this.person.currentFloor);
+    const floorY = this.buildingView.getFloorY(this.person.currentFloor);
+    const floorHeight = this.buildingView.floorHeight;
+    const distanceFromFloor = 3;
+    const y = floorY + floorHeight / 2 - distanceFromFloor - this.personHeight;
     this.container.x = x;
-    this.container.y = y - this.personHeight / 2;
+    this.container.y = y;
   }
 
   public setPosition(x: number, y: number): void {

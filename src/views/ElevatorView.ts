@@ -23,7 +23,7 @@ export class ElevatorView {
     
     this.drawElevator();
     
-    this.updatePosition(startFloor);
+    this.updatePosition( startFloor );
     
     this.container.addChild(this.elevatorGraphics);
   }
@@ -49,6 +49,9 @@ export class ElevatorView {
     const doorHeight = this.elevatorHeight * 0.7;
     this.elevatorGraphics.moveTo(this.elevatorWidth, 0);
     this.elevatorGraphics.lineTo(this.elevatorWidth, this.elevatorHeight - doorHeight);
+
+    this.elevatorGraphics.moveTo(this.elevatorWidth , this.elevatorHeight - doorHeight / 10);
+    this.elevatorGraphics.lineTo(this.elevatorWidth, this.elevatorHeight + 2.5);
   }
 
   public updatePosition(floor: number): void {

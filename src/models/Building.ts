@@ -22,9 +22,23 @@ export class Building {
     }
 
     let targetFloor: number;
+    let attempts = 0;
+    const maxAttempts = 100;
+
     do {
-      targetFloor = Math.floor(Math.random() * this.floors) + 1;
-    } while (targetFloor === floor);
+      if (floor === 1) {
+        targetFloor = Math.floor(Math.random() * (this.floors - 1)) + 2;
+      } else if (floor === this.floors) {
+        targetFloor = Math.floor(Math.random() * (this.floors - 1)) + 1;
+      } else {
+        targetFloor = Math.floor(Math.random() * this.floors) + 1;
+      }
+      attempts++;
+    } while (targetFloor === floor && attempts < maxAttempts);
+
+    if (targetFloor === floor) {
+      return null;
+    }
 
     const id = `person_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const person = new Person(id, floor, targetFloor);

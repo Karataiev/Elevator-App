@@ -1,7 +1,11 @@
 import { Application } from 'pixi.js';
+import * as TWEEN from '@tweenjs/tween.js';
 import { GameView } from './views/GameView';
 import { Building } from './models/Building';
 import { BuildingConfig } from './models/types';
+import { PersonSpawner } from './controllers/PersonSpawner';
+import { ElevatorController } from './controllers/ElevatorController';
+import { PersonController } from './controllers/PersonController';
 
 function initApp() {
   const canvasElement = document.getElementById('canvas') as HTMLCanvasElement;
@@ -51,6 +55,28 @@ function initApp() {
   );
 
   app.stage.addChild(gameView.container);
+
+  const personController = new PersonController(gameView.buildingView, gameView);
+  const elevatorController = new ElevatorController(
+    gameView.elevatorView,
+    gameView.buildingView,
+    building.elevator,
+    personController,
+    gameView,
+    building
+  );
+
+  const personSpawner = new PersonSpawner(building, gameView, personController);
+  personSpawner.startSpawning();
+
+  elevatorController.process().catch(console.error);
+
+  function animate(time: number) {
+    requestAnimationFrame(animate);
+    TWEEN.update(time);
+  }
+
+  animate(performance.now());
 }
 
 initApp();
