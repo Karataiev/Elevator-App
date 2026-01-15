@@ -25,11 +25,4 @@ export class Person implements IPerson {
     }
   }
 
-  public isWaiting(): boolean {
-    return !this.isInElevator && this.currentFloor !== this.targetFloor;
-  }
-
-  public updateDirection(): void {
-    this.direction = this.getDirection();
-  }
 }

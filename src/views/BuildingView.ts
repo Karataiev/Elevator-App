@@ -153,4 +153,8 @@ export class BuildingView {
   public getElevatorShaftStartX(): number {
     return this.leftWallWidth + 170;
   }
+
+  public getRightWallX(): number {
+    return this.leftWallWidth + this.corridorWidth;
+  }
 }

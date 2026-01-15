@@ -25,3 +25,12 @@ yarn-error.log*
 # Environment
 .env
 .env.local
+
+# Interview preparation files
+COMPONENTS_DESCRIPTION.md
+INTERVIEW_QUESTIONS.md
+INTERVIEW_ANSWERS.md
+PLAN.md
+
+# Git ignore file itself
+.gitignore

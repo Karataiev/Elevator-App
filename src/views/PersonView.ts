@@ -90,9 +90,4 @@ export class PersonView {
   public getPerson(): Person {
     return this.person;
   }
-
-  public update(): void {
-    this.updateColor();
-    this.updatePosition();
-  }
 }

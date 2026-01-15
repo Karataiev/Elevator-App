@@ -16,7 +16,6 @@ export class ElevatorController {
   private gameView: GameView;
   private building: Building;
   private currentTween: TWEEN.Tween<{ y: number }> | null = null;
-  private isMoving: boolean = false;
   private isProcessing: boolean = false;
   private readonly floorDuration = 1000;
   private readonly stopDelay = 800;
@@ -49,8 +48,6 @@ export class ElevatorController {
         return;
       }
 
-      this.isMoving = true;
-
       const currentY = this.elevatorView.container.y;
       const targetY = this.buildingView.getFloorY(targetFloor) - this.elevatorView.getHeight() / 2;
       
@@ -67,7 +64,6 @@ export class ElevatorController {
         .onComplete(() => {
           this.elevator.setFloor(targetFloor);
           this.elevatorView.container.y = targetY;
-          this.isMoving = false;
           this.currentTween = null;
           resolve();
         })
@@ -75,20 +71,58 @@ export class ElevatorController {
     });
   }
 
-  public isMovingNow(): boolean {
-    return this.isMoving;
-  }
-
-  public stop(): void {
-    if (this.currentTween) {
-      this.currentTween.stop();
-      this.currentTween = null;
-      this.isMoving = false;
-    }
-  }
-
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private getFloorsToVisit(targetFloor: number): number[] {
+    const floors: number[] = [];
+    const currentFloor = this.elevator.currentFloor;
+    const isFull = this.elevator.passengers.length >= this.elevator.capacity;
+    
+    if (currentFloor < targetFloor) {
+      for (let i = currentFloor; i <= targetFloor; i++) {
+        if (isFull) {
+          const hasPassengersToUnload = this.elevator.passengers.some(
+            p => p.targetFloor === i
+          );
+          if (hasPassengersToUnload) {
+            floors.push(i);
+          }
+        } else {
+          const hasWaitingPeople = this.building.getAllWaitingPeople(i).length > 0;
+          const hasPassengersToUnload = this.elevator.passengers.some(
+            p => p.targetFloor === i
+          );
+          if (hasWaitingPeople || hasPassengersToUnload) {
+            floors.push(i);
+          }
+        }
+      }
+    } else if (currentFloor > targetFloor) {
+      for (let i = currentFloor; i >= targetFloor; i--) {
+        if (isFull) {
+          const hasPassengersToUnload = this.elevator.passengers.some(
+            p => p.targetFloor === i
+          );
+          if (hasPassengersToUnload) {
+            floors.push(i);
+          }
+        } else {
+          const hasWaitingPeople = this.building.getAllWaitingPeople(i).length > 0;
+          const hasPassengersToUnload = this.elevator.passengers.some(
+            p => p.targetFloor === i
+          );
+          if (hasWaitingPeople || hasPassengersToUnload) {
+            floors.push(i);
+          }
+        }
+      }
+    } else {
+      floors.push(currentFloor);
+    }
+    
+    return floors;
   }
 
   private findNextFloorWithPeople(direction: Direction): number | null {
@@ -177,19 +211,37 @@ export class ElevatorController {
         continue;
       }
 
-      await this.moveToFloor(nextFloor);
-      await this.delay(this.stopDelay);
+      const floorsToVisit = this.getFloorsToVisit(nextFloor);
       
-      await this.unloadPassengers(nextFloor);
-      await this.loadPassengers(nextFloor);
+      for (const floor of floorsToVisit) {
+        if (floor !== this.elevator.currentFloor) {
+          await this.moveToFloor(floor);
+        }
+        
+        await this.delay(this.stopDelay);
+        
+        this.unloadPassengers(floor);
+        
+        if (this.elevator.passengers.length < this.elevator.capacity) {
+          await this.loadPassengers(floor);
+        }
+      }
     }
   }
 
-  private isPersonNearElevator(personView: PersonView): boolean {
+  private isPersonInQueue(personView: PersonView): boolean {
+    const hasQueuePosition = this.gameView.hasPersonInQueue(personView.getPerson().id);
+    const hasActiveAnimation = this.personController.hasActiveAnimation(personView.getPerson().id);
+    
+    if (!hasQueuePosition || hasActiveAnimation) {
+      return false;
+    }
+    
     const elevatorShaftStartX = this.buildingView.getElevatorShaftStartX();
+    const rightWallX = this.buildingView.getRightWallX();
     const personX = personView.getX();
-    const threshold = 10;
-    return Math.abs(personX - elevatorShaftStartX) < threshold;
+    
+    return personX >= elevatorShaftStartX && personX < rightWallX;
   }
 
   private async loadPassengers(floor: number): Promise<void> {
@@ -202,29 +254,79 @@ export class ElevatorController {
     }
     
     for (const person of waitingPeople) {
+      if (this.elevator.passengers.length >= this.elevator.capacity) {
+        break;
+      }
+      
       if (this.elevator.canPickUp(person)) {
         const personView = this.gameView.getPersonView(person.id);
-        if (personView && this.isPersonNearElevator(personView)) {
-          this.elevator.addPassenger(person);
+        if (personView && this.isPersonInQueue(personView)) {
+          const wasAdded = this.elevator.addPassenger(person);
+          
+          if (!wasAdded) {
+            continue;
+          }
+          
           this.building.removeWaitingPerson(person);
-          personView.container.visible = false;
+          this.gameView.removePersonFromQueue(person.id, floor);
+          
+          this.gameView.container.removeChild(personView.container);
+          this.elevatorView.container.addChild(personView.container);
+          
+          this.updatePassengersPositions();
         }
       }
     }
   }
 
-  private async unloadPassengers(floor: number): Promise<void> {
+  private getPersonPositionInElevator(index: number): number {
+    const personWidth = 30;
+    const spacing = 3;
+    return index * (personWidth + spacing) + spacing;
+  }
+
+  private updatePassengersPositions(): void {
+    const elevatorHeight = this.elevatorView.getHeight();
+    const personHeight = 40;
+    const distanceFromFloor = 3;
+    const yPosition = elevatorHeight - distanceFromFloor - personHeight;
+    
+    this.elevator.passengers.forEach((person, index) => {
+      const personView = this.gameView.getPersonView(person.id);
+      if (personView) {
+        const xPosition = this.getPersonPositionInElevator(index);
+        personView.setPosition(xPosition, yPosition);
+      }
+    });
+  }
+
+  private unloadPassengers(floor: number): void {
     const passengersToRemove = this.elevator.removePassengers();
     
-    for (const person of passengersToRemove) {
+    passengersToRemove.forEach((person, index) => {
       person.currentFloor = floor;
       const personView = this.gameView.getPersonView(person.id);
       
       if (personView) {
-        personView.container.visible = true;
-        personView.updatePosition();
-        await this.personController.moveFromElevator(personView);
+        this.elevatorView.container.removeChild(personView.container);
+        this.gameView.container.addChild(personView.container);
+        
+        const elevatorShaftStartX = this.buildingView.getElevatorShaftStartX();
+        const floorY = this.buildingView.getFloorY(floor);
+        const floorHeight = this.buildingView.floorHeight;
+        const personHeight = 40;
+        const personWidth = 30;
+        const distanceFromFloor = 3;
+        const spacing = 3;
+        const yPosition = floorY + floorHeight / 2 - distanceFromFloor - personHeight;
+        const xPosition = elevatorShaftStartX + index * (personWidth + spacing);
+        
+        personView.setPosition(xPosition, yPosition);
+        
+        this.personController.moveFromElevator(personView);
       }
-    }
+    });
+    
+    this.updatePassengersPositions();
   }
 }

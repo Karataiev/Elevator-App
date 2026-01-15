@@ -65,14 +65,6 @@ export class ElevatorView {
     this.container.y = y;
   }
 
-  public getCurrentFloor(): number {
-    return this.currentFloor;
-  }
-
-  public getWidth(): number {
-    return this.elevatorWidth;
-  }
-
   public getHeight(): number {
     return this.elevatorHeight;
   }

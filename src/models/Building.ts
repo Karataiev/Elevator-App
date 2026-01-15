@@ -8,6 +8,14 @@ export class Building {
   public waitingPeople: Person[][];
 
   constructor(config: BuildingConfig) {
+    if (config.floors < 4 || config.floors > 10) {
+      throw new Error(`Кількість поверхів повинна бути від 4 до 10. Отримано: ${config.floors}`);
+    }
+    
+    if (config.elevatorCapacity < 2 || config.elevatorCapacity > 4) {
+      throw new Error(`Місткість ліфта повинна бути від 2 до 4. Отримано: ${config.elevatorCapacity}`);
+    }
+    
     this.floors = config.floors;
     this.elevator = new Elevator(config.elevatorCapacity, 1);
     this.waitingPeople = [];

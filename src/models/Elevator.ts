@@ -1,4 +1,4 @@
-import { Direction, Person, ElevatorState } from './types';
+import { Direction, Person } from './types';
 
 export class Elevator {
   public currentFloor: number;
@@ -85,15 +85,6 @@ export class Elevator {
     }
 
     return null;
-  }
-
-  public getState(): ElevatorState {
-    return {
-      currentFloor: this.currentFloor,
-      direction: this.direction,
-      passengers: [...this.passengers],
-      capacity: this.capacity,
-    };
   }
 
   public setFloor(floor: number): void {

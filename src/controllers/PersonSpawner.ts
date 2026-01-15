@@ -43,8 +43,16 @@ export class PersonSpawner {
     this.spawnTimers.set(floor, timerId);
   }
 
+  private readonly maxQueueSize = 10;
+
   private async spawnForFloor(floor: number): Promise<void> {
     if (!this.isSpawning) {
+      return;
+    }
+
+    const queueSize = this.gameView.getQueueSize(floor);
+    if (queueSize >= this.maxQueueSize) {
+      this.scheduleNextSpawn(floor);
       return;
     }
 
@@ -56,19 +64,5 @@ export class PersonSpawner {
     }
 
     this.scheduleNextSpawn(floor);
-  }
-
-  public stopSpawning(): void {
-    this.isSpawning = false;
-    
-    this.spawnTimers.forEach((timerId) => {
-      clearTimeout(timerId);
-    });
-    
-    this.spawnTimers.clear();
-  }
-
-  public isActive(): boolean {
-    return this.isSpawning;
   }
 }

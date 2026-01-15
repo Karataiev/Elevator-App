@@ -12,13 +12,6 @@ export interface Person {
   isInElevator: boolean;
 }
 
-export interface ElevatorState {
-  currentFloor: number;
-  direction: Direction;
-  passengers: Person[];
-  capacity: number;
-}
-
 export interface BuildingConfig {
   floors: number;
   elevatorCapacity: number;

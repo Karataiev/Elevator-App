@@ -46,7 +46,8 @@ export class GameView {
     if (personView) {
       this.container.removeChild(personView.container);
       this.personViews.delete(personId);
-      this.removePersonFromQueue(personId);
+      const person = personView.getPerson();
+      this.removePersonFromQueue(personId, person.currentFloor);
       personView.container.destroy();
     }
   }
@@ -83,8 +84,40 @@ export class GameView {
     this.queuePositions.set(personId, maxPosition + 1);
   }
 
-  public removePersonFromQueue(personId: string): void {
+  public hasPersonInQueue(personId: string): boolean {
+    return this.queuePositions.has(personId);
+  }
+
+  public removePersonFromQueue(personId: string, floor: number): void {
+    const removedPosition = this.queuePositions.get(personId);
+    if (removedPosition === undefined) {
+      return;
+    }
+    
     this.queuePositions.delete(personId);
+    
+    const peopleInQueue = this.getPeopleInQueue(floor);
+    peopleInQueue.forEach((personView) => {
+      const currentPosition = this.queuePositions.get(personView.getPerson().id);
+      if (currentPosition !== undefined && currentPosition > removedPosition) {
+        this.queuePositions.set(personView.getPerson().id, currentPosition - 1);
+      }
+    });
+    
+    this.updateQueuePositions(floor);
+  }
+
+  public getQueueSize(floor: number): number {
+    let count = 0;
+    this.personViews.forEach((personView) => {
+      const person = personView.getPerson();
+      if (person.currentFloor === floor && !person.isInElevator) {
+        if (this.queuePositions.has(person.id)) {
+          count++;
+        }
+      }
+    });
+    return count;
   }
 
   public updateQueuePositions(floor: number): void {
@@ -105,18 +138,6 @@ export class GameView {
         const yPosition = floorY + floorHeight / 2 - distanceFromFloor - personHeight;
         personView.setPosition(xPosition, yPosition);
       }
-    });
-  }
-
-  public updateElevatorPosition(): void {
-    this.elevatorView.updatePosition(this.building.elevator.currentFloor);
-  }
-
-  public render(): void {
-    this.updateElevatorPosition();
-    
-    this.personViews.forEach((personView) => {
-      personView.update();
     });
   }
 }
